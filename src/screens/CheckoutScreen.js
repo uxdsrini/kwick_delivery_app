@@ -168,7 +168,7 @@ export default function CheckoutScreen({ navigation, route }) {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={commonStyles.primaryButtonText}>Place Order</Text>
+            <Text style={commonStyles.primaryButtonText}>Confirm On Whatsapp</Text>
           )}
         </TouchableOpacity>
       </View>
