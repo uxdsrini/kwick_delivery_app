@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert, Platform, Linking } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, FONTS, SHADOWS, commonStyles } from '../theme';
@@ -37,18 +37,19 @@ export default function CheckoutScreen({ navigation, route }) {
   const handlePlaceOrder = async () => {
     if (items.length === 0) return;
     
-    const deliveryBoyNumber = "9963092123";
-    const { Linking } = require('react-native');
-
+    const deliveryBoyNumber = "8978540612";
     const orderId = `FR-${Math.floor(1000 + Math.random() * 9000)}`;
     const message = `🛒 *New Kwick Order*\n\n*Order ID:* ${orderId}\n*Customer:* ${userData?.fullName || 'Customer'}\n*Phone:* ${address.mobile || 'N/A'}\n*Address:* ${address.flat}, ${address.street}, ${address.pincode}\n\n*Items:*\n${items.map(item => `• ${item.name} - ${item.quantity} ${item.unit}`).join("\n")}\n\n*Payment:* Cash on Delivery\n\n_Sent via Kwick App_`;
 
     const whatsappUrl = `https://wa.me/${deliveryBoyNumber}?text=${encodeURIComponent(message)}`;
 
-    // Open WhatsApp IMMEDIATELY (to avoid browser popup blocking)
-    Linking.openURL(whatsappUrl).catch(() => {
-      console.warn('WhatsApp not installed');
-    });
+    if (Platform.OS === 'web') {
+      window.open(whatsappUrl, '_blank');
+    } else {
+      Linking.openURL(whatsappUrl).catch(() => {
+        Alert.alert('Error', 'WhatsApp not installed');
+      });
+    }
 
     setLoading(true);
     try {
