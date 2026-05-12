@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert, Platform, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, FONTS, SHADOWS, commonStyles } from '../theme';
@@ -34,25 +34,25 @@ export default function CheckoutScreen({ navigation, route }) {
     fetchUser();
   }, []);
 
-  const handlePlaceOrder = async () => {
-    if (items.length === 0) return;
+  const sendOrderToWhatsApp = (order) => {
+    const deliveryBoyNumber = "9963092123";
+    const { Linking } = require('react-native');
 
-    const deliveryBoyNumber = "8978540612";
-    const orderId = `FR-${Math.floor(1000 + Math.random() * 9000)}`;
-    const message = `🛒 *New Kwick Order*\n\n*Order ID:* ${orderId}\n*Customer:* ${userData?.fullName || 'Customer'}\n*Phone:* ${address.mobile || 'N/A'}\n*Address:* ${address.flat}, ${address.street}, ${address.pincode}\n\n*Items:*\n${items.map(item => `• ${item.name} - ${item.quantity} ${item.unit}`).join("\n")}\n\n*Payment:* Cash on Delivery\n\n_Sent via Kwick App_`;
+    const message = `🛒 *New Kwick Order*\n\n*Customer:* ${userData?.fullName || 'Customer'}\n*Phone:* ${address.mobile || 'N/A'}\n*Address:* ${address.flat}, ${address.street}, ${address.pincode}\n\n*Items:*\n${order.items.map(item => `• ${item.name} - ${item.quantity} ${item.unit}`).join("\n")}\n\n*Payment:* Cash on Delivery\n\n_Sent via Kwick App_`;
 
     const whatsappUrl = `https://wa.me/${deliveryBoyNumber}?text=${encodeURIComponent(message)}`;
 
-    if (Platform.OS === 'web') {
-      window.open(whatsappUrl, '_blank');
-    } else {
-      Linking.openURL(whatsappUrl).catch(() => {
-        Alert.alert('Error', 'WhatsApp not installed');
-      });
-    }
+    Linking.openURL(whatsappUrl).catch(() => {
+      Alert.alert('Error', 'Make sure WhatsApp is installed on your device');
+    });
+  };
+
+  const handlePlaceOrder = async () => {
+    if (items.length === 0) return;
 
     setLoading(true);
     try {
+      const orderId = `FR-${Math.floor(1000 + Math.random() * 9000)}`;
       const orderData = {
         id: orderId,
         userId: auth.currentUser?.uid || 'anonymous',
@@ -70,7 +70,11 @@ export default function CheckoutScreen({ navigation, route }) {
       };
 
       await addDoc(collection(db, 'orders'), orderData);
-      navigation.navigate('OrderSuccess', { items, address, orderId });
+
+      // Call WhatsApp redirection
+      sendOrderToWhatsApp(orderData);
+
+      navigation.navigate('OrderSuccess', { items, address });
     } catch (error) {
       console.error("Error placing order:", error);
       Alert.alert('Error', 'Failed to place order. Please try again.');
@@ -78,7 +82,6 @@ export default function CheckoutScreen({ navigation, route }) {
       setLoading(false);
     }
   };
-
   const addr = {
     type: address.type || 'Home',
     line1: address.flat || '42 Fresh Garden Street',
@@ -165,7 +168,7 @@ export default function CheckoutScreen({ navigation, route }) {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={commonStyles.primaryButtonText}>Confirm on WhatsApp</Text>
+            <Text style={commonStyles.primaryButtonText}>Place Order</Text>
           )}
         </TouchableOpacity>
       </View>
