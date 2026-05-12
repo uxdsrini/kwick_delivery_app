@@ -4,16 +4,14 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, FONTS, SHADOWS, commonStyles } from '../theme';
 
-export default function OrderSuccessScreen({ navigation, route }) {
-  const { items = [], address = {}, orderId = '#FR-5421' } = route.params || {};
-
+export default function OrderSuccessScreen({ navigation }) {
   return (
     <View style={commonStyles.screen}>
       <StatusBar style="dark" />
 
       {/* Header */}
       <View style={s.header}>
-        <Text style={s.headerTitle}>Order Success</Text>
+        <Text style={s.headerTitle}>Checkout</Text>
       </View>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
@@ -29,9 +27,9 @@ export default function OrderSuccessScreen({ navigation, route }) {
 
         {/* Delivery Info Card */}
         <View style={s.deliveryCard}>
-          <Text style={s.deliveryTitle}>Action Required!</Text>
+          <Text style={s.deliveryTitle}>Delivery Person Will Call you</Text>
           <Text style={s.deliveryDesc}>
-            Please click the button below to send your order details to the delivery partner on WhatsApp.
+            Delivery boy check the payment and confirm payment then your order will be deliver to your door step.
           </Text>
         </View>
 
@@ -39,7 +37,7 @@ export default function OrderSuccessScreen({ navigation, route }) {
         <View style={s.orderInfoCard}>
           <View style={s.infoRow}>
             <Text style={s.infoLabel}>ORDER ID</Text>
-            <Text style={s.infoValue}>{orderId}</Text>
+            <Text style={s.infoValue}>#FR-5421</Text>
           </View>
           <View style={s.infoDivider} />
           <View style={s.infoRow}>
