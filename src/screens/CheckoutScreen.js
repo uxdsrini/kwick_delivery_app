@@ -21,12 +21,37 @@ export default function CheckoutScreen({ navigation, route }) {
   const { items = [], address = {} } = route.params || {};
   const [loading, setLoading] = useState(false);
 
+  const [userData, setUserData] = useState(null);
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      if (auth.currentUser) {
+        const { getDoc, doc } = require('firebase/firestore');
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (userDoc.exists()) setUserData(userDoc.data());
+      }
+    };
+    fetchUser();
+  }, []);
+
   const handlePlaceOrder = async () => {
     if (items.length === 0) return;
+    
+    const deliveryBoyNumber = "9963092123";
+    const { Linking } = require('react-native');
+
+    const orderId = `FR-${Math.floor(1000 + Math.random() * 9000)}`;
+    const message = `🛒 *New Kwick Order*\n\n*Order ID:* ${orderId}\n*Customer:* ${userData?.fullName || 'Customer'}\n*Phone:* ${address.mobile || 'N/A'}\n*Address:* ${address.flat}, ${address.street}, ${address.pincode}\n\n*Items:*\n${items.map(item => `• ${item.name} - ${item.quantity} ${item.unit}`).join("\n")}\n\n*Payment:* Cash on Delivery\n\n_Sent via Kwick App_`;
+
+    const whatsappUrl = `https://wa.me/${deliveryBoyNumber}?text=${encodeURIComponent(message)}`;
+
+    // Open WhatsApp IMMEDIATELY (to avoid browser popup blocking)
+    Linking.openURL(whatsappUrl).catch(() => {
+      console.warn('WhatsApp not installed');
+    });
 
     setLoading(true);
     try {
-      const orderId = `FR-${Math.floor(1000 + Math.random() * 9000)}`;
       const orderData = {
         id: orderId,
         userId: auth.currentUser?.uid || 'anonymous',
@@ -44,7 +69,6 @@ export default function CheckoutScreen({ navigation, route }) {
       };
 
       await addDoc(collection(db, 'orders'), orderData);
-      
       navigation.navigate('OrderSuccess', { items, address, orderId });
     } catch (error) {
       console.error("Error placing order:", error);
@@ -53,6 +77,7 @@ export default function CheckoutScreen({ navigation, route }) {
       setLoading(false);
     }
   };
+
   const addr = {
     type: address.type || 'Home',
     line1: address.flat || '42 Fresh Garden Street',
@@ -139,7 +164,7 @@ export default function CheckoutScreen({ navigation, route }) {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={commonStyles.primaryButtonText}>Place Order</Text>
+            <Text style={commonStyles.primaryButtonText}>Confirm on WhatsApp</Text>
           )}
         </TouchableOpacity>
       </View>

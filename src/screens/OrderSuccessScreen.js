@@ -7,19 +7,6 @@ import { COLORS, SPACING, RADIUS, FONTS, SHADOWS, commonStyles } from '../theme'
 export default function OrderSuccessScreen({ navigation, route }) {
   const { items = [], address = {}, orderId = '#FR-5421' } = route.params || {};
 
-  const sendOrderToWhatsApp = () => {
-    const deliveryBoyNumber = "9963092123";
-    const { Linking, Alert } = require('react-native');
-
-    const message = `🛒 *New Kwick Order*\n\n*Order ID:* ${orderId}\n*Phone:* ${address.mobile || 'N/A'}\n*Address:* ${address.flat}, ${address.street}, ${address.pincode}\n\n*Items:*\n${items.map(item => `• ${item.name} - ${item.quantity} ${item.unit}`).join("\n")}\n\n*Payment:* Cash on Delivery\n\n_Sent via Kwick App_`;
-
-    const whatsappUrl = `https://wa.me/${deliveryBoyNumber}?text=${encodeURIComponent(message)}`;
-
-    Linking.openURL(whatsappUrl).catch(() => {
-      Alert.alert('Error', 'Make sure WhatsApp is installed on your device');
-    });
-  };
-
   return (
     <View style={commonStyles.screen}>
       <StatusBar style="dark" />
@@ -65,9 +52,9 @@ export default function OrderSuccessScreen({ navigation, route }) {
         </View>
 
         {/* CTA Buttons */}
-        <TouchableOpacity style={s.callBtn} activeOpacity={0.85} onPress={sendOrderToWhatsApp}>
-          <MaterialCommunityIcons name="whatsapp" size={24} color="#fff" />
-          <Text style={s.callBtnText}>Confirm on WhatsApp</Text>
+        <TouchableOpacity style={s.callBtn} activeOpacity={0.85}>
+          <MaterialCommunityIcons name="truck-delivery" size={22} color="#fff" />
+          <Text style={s.callBtnText}>Call to Delivery</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
