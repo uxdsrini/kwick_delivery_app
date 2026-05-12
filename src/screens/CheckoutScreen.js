@@ -38,7 +38,7 @@ export default function CheckoutScreen({ navigation, route }) {
     const deliveryBoyNumber = "9963092123";
     const { Linking } = require('react-native');
 
-    const message = `🛒 *New Kwick Order*\n\n*Customer:* ${userData?.fullName || 'Customer'}\n*Phone:* ${address.mobile || 'N/A'}\n*Address:* ${address.flat}, ${address.street}, ${address.pincode}\n\n*Items:*\n${order.items.map(item => `• ${item.name} - ${item.quantity} ${item.unit}`).join("\n")}\n\n*Payment:* Cash on Delivery\n\n_Sent via Kwick App_`;
+    const message = `🛒 *New Kwick Order*\n\n*Customer:* ${userData?.fullName || 'Customer'}\n*Phone:* ${address.mobile || 'N/A'}\n*Address:* ${address.flat}, ${address.street}, ${address.pincode}\n\n*Items:*\n${order.items.map(item => `• ${item.name} - ${item.quantity} ${item.unit}`).join("\n")}\n\n_Sent via Kwick App_`;
 
     const whatsappUrl = `https://wa.me/${deliveryBoyNumber}?text=${encodeURIComponent(message)}`;
 
