@@ -6,8 +6,10 @@ import { COLORS, SPACING, RADIUS, FONTS, SHADOWS, commonStyles } from '../theme'
 import { auth, db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-const EMOJIS = { kale:'🥬', carrot:'🥕', apple:'🍎', tomato:'🍅', banana:'🍌',
-  milk:'🥛', egg:'🥚', bread:'🍞', rice:'🍚', onion:'🧅', potato:'🥔' };
+const EMOJIS = {
+  kale: '🥬', carrot: '🥕', apple: '🍎', tomato: '🍅', banana: '🍌',
+  milk: '🥛', egg: '🥚', bread: '🍞', rice: '🍚', onion: '🧅', potato: '🥔'
+};
 
 const getEmoji = (name) => {
   const l = name.toLowerCase();
@@ -18,10 +20,36 @@ const getEmoji = (name) => {
 export default function CheckoutScreen({ navigation, route }) {
   const { items = [], address = {} } = route.params || {};
   const [loading, setLoading] = useState(false);
-  
+
+  const [userData, setUserData] = useState(null);
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      if (auth.currentUser) {
+        const { getDoc, doc } = require('firebase/firestore');
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (userDoc.exists()) setUserData(userDoc.data());
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const sendOrderToWhatsApp = (order) => {
+    const deliveryBoyNumber = "9963092123";
+    const { Linking } = require('react-native');
+
+    const message = `🛒 *New Kwick Order*\n\n*Customer:* ${userData?.fullName || 'Customer'}\n*Phone:* ${address.mobile || 'N/A'}\n*Address:* ${address.flat}, ${address.street}, ${address.pincode}\n\n*Items:*\n${order.items.map(item => `• ${item.name} - ${item.quantity} ${item.unit}`).join("\n")}\n\n*Payment:* Cash on Delivery\n\n_Sent via Kwick App_`;
+
+    const whatsappUrl = `https://wa.me/${deliveryBoyNumber}?text=${encodeURIComponent(message)}`;
+
+    Linking.openURL(whatsappUrl).catch(() => {
+      Alert.alert('Error', 'Make sure WhatsApp is installed on your device');
+    });
+  };
+
   const handlePlaceOrder = async () => {
     if (items.length === 0) return;
-    
+
     setLoading(true);
     try {
       const orderId = `FR-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -33,7 +61,7 @@ export default function CheckoutScreen({ navigation, route }) {
           quantity: i.quantity,
           unit: i.unit
         })),
-        total: 0, // In a real app, calculate total
+        total: 0,
         status: 'In Transit',
         emoji: getEmoji(items[0]?.name || ''),
         date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase() + ', ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
@@ -42,6 +70,10 @@ export default function CheckoutScreen({ navigation, route }) {
       };
 
       await addDoc(collection(db, 'orders'), orderData);
+
+      // Call WhatsApp redirection
+      sendOrderToWhatsApp(orderData);
+
       navigation.navigate('OrderSuccess', { items, address });
     } catch (error) {
       console.error("Error placing order:", error);
@@ -102,21 +134,21 @@ export default function CheckoutScreen({ navigation, route }) {
             <Text style={s.tblH}>ITEM</Text><Text style={s.tblH}>QTY</Text>
           </View>
           {items.map((item, i) => (
-            <View key={item.id || i} style={[s.orderRow, i < items.length-1 && s.orderRowBorder]}>
+            <View key={item.id || i} style={[s.orderRow, i < items.length - 1 && s.orderRowBorder]}>
               <View style={s.orderLeft}>
-                <View style={s.emojiWrap}><Text style={{fontSize:20}}>{getEmoji(item.name)}</Text></View>
+                <View style={s.emojiWrap}><Text style={{ fontSize: 20 }}>{getEmoji(item.name)}</Text></View>
                 <Text style={s.itemName}>{item.name}</Text>
               </View>
               <Text style={s.itemQty}>{item.quantity} {item.unit}</Text>
             </View>
           ))}
-          {items.length === 0 && <View style={{padding:24,alignItems:'center'}}>
-            <Text style={{color:COLORS.textMuted}}>No items added</Text></View>}
+          {items.length === 0 && <View style={{ padding: 24, alignItems: 'center' }}>
+            <Text style={{ color: COLORS.textMuted }}>No items added</Text></View>}
         </View>
 
         {/* Free Delivery */}
         <View style={s.banner}>
-          <View style={{flex:1}}>
+          <View style={{ flex: 1 }}>
             <Text style={s.bannerTitle}>Free Delivery</Text>
             <Text style={s.bannerSub}>Free Delivery at your doorstep.</Text>
           </View>
@@ -145,38 +177,54 @@ export default function CheckoutScreen({ navigation, route }) {
 }
 
 const s = StyleSheet.create({
-  header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',
-    paddingHorizontal:SPACING.xl,paddingTop:50,paddingBottom:SPACING.md},
-  backBtn:{width:40,height:40,borderRadius:20,alignItems:'center',justifyContent:'center'},
-  headerTitle:{fontSize:FONTS.size.xl,...FONTS.bold,color:COLORS.primary},
-  scroll:{paddingHorizontal:SPACING.xl,paddingTop:SPACING.lg,paddingBottom:120},
-  secRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',
-    marginBottom:SPACING.md,marginTop:SPACING.xl},
-  secIcon:{flexDirection:'row',alignItems:'center'},
-  secLabel:{fontSize:FONTS.size.lg,...FONTS.bold,color:COLORS.text,marginLeft:SPACING.sm},
-  changeBtn:{fontSize:FONTS.size.sm,color:COLORS.primary,...FONTS.semibold},
-  card:{backgroundColor:COLORS.surface,borderRadius:RADIUS.lg,padding:SPACING.lg,...SHADOWS.sm},
-  addrType:{fontSize:FONTS.size.md,...FONTS.semibold,color:COLORS.text,marginBottom:4},
-  addrLine:{fontSize:FONTS.size.sm,color:COLORS.textSecondary,...FONTS.regular,lineHeight:20},
-  phone:{fontSize:FONTS.size.md,color:COLORS.text,...FONTS.medium},
-  orderCard:{backgroundColor:COLORS.surface,borderRadius:RADIUS.xl,overflow:'hidden',...SHADOWS.sm},
-  tblHeader:{flexDirection:'row',justifyContent:'space-between',paddingHorizontal:SPACING.lg,
-    paddingVertical:SPACING.md,backgroundColor:COLORS.surfaceElevated},
-  tblH:{fontSize:FONTS.size.xs,...FONTS.semibold,color:COLORS.textMuted,letterSpacing:1},
-  orderRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',
-    paddingHorizontal:SPACING.lg,paddingVertical:14},
-  orderRowBorder:{borderBottomWidth:1,borderBottomColor:COLORS.borderLight},
-  orderLeft:{flexDirection:'row',alignItems:'center',flex:1},
-  emojiWrap:{width:40,height:40,borderRadius:RADIUS.md,backgroundColor:COLORS.primaryLight,
-    alignItems:'center',justifyContent:'center',marginRight:SPACING.md},
-  itemName:{fontSize:FONTS.size.md,...FONTS.medium,color:COLORS.text},
-  itemQty:{fontSize:FONTS.size.sm,...FONTS.medium,color:COLORS.textSecondary},
-  banner:{flexDirection:'row',alignItems:'center',backgroundColor:COLORS.accentLight,
-    borderRadius:RADIUS.xl,padding:SPACING.xl,marginTop:SPACING.xxl},
-  bannerTitle:{fontSize:FONTS.size.lg,...FONTS.bold,color:COLORS.text,marginBottom:4},
-  bannerSub:{fontSize:FONTS.size.sm,color:COLORS.textSecondary,...FONTS.regular},
-  bannerIcon:{width:52,height:52,borderRadius:26,backgroundColor:'rgba(255,140,0,0.12)',
-    alignItems:'center',justifyContent:'center'},
-  bottom:{paddingHorizontal:SPACING.xl,paddingBottom:SPACING.xxxl,paddingTop:SPACING.lg,
-    backgroundColor:COLORS.background},
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: SPACING.xl, paddingTop: 50, paddingBottom: SPACING.md
+  },
+  backBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: FONTS.size.xl, ...FONTS.bold, color: COLORS.primary },
+  scroll: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg, paddingBottom: 120 },
+  secRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: SPACING.md, marginTop: SPACING.xl
+  },
+  secIcon: { flexDirection: 'row', alignItems: 'center' },
+  secLabel: { fontSize: FONTS.size.lg, ...FONTS.bold, color: COLORS.text, marginLeft: SPACING.sm },
+  changeBtn: { fontSize: FONTS.size.sm, color: COLORS.primary, ...FONTS.semibold },
+  card: { backgroundColor: COLORS.surface, borderRadius: RADIUS.lg, padding: SPACING.lg, ...SHADOWS.sm },
+  addrType: { fontSize: FONTS.size.md, ...FONTS.semibold, color: COLORS.text, marginBottom: 4 },
+  addrLine: { fontSize: FONTS.size.sm, color: COLORS.textSecondary, ...FONTS.regular, lineHeight: 20 },
+  phone: { fontSize: FONTS.size.md, color: COLORS.text, ...FONTS.medium },
+  orderCard: { backgroundColor: COLORS.surface, borderRadius: RADIUS.xl, overflow: 'hidden', ...SHADOWS.sm },
+  tblHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md, backgroundColor: COLORS.surfaceElevated
+  },
+  tblH: { fontSize: FONTS.size.xs, ...FONTS.semibold, color: COLORS.textMuted, letterSpacing: 1 },
+  orderRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: SPACING.lg, paddingVertical: 14
+  },
+  orderRowBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
+  orderLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  emojiWrap: {
+    width: 40, height: 40, borderRadius: RADIUS.md, backgroundColor: COLORS.primaryLight,
+    alignItems: 'center', justifyContent: 'center', marginRight: SPACING.md
+  },
+  itemName: { fontSize: FONTS.size.md, ...FONTS.medium, color: COLORS.text },
+  itemQty: { fontSize: FONTS.size.sm, ...FONTS.medium, color: COLORS.textSecondary },
+  banner: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.accentLight,
+    borderRadius: RADIUS.xl, padding: SPACING.xl, marginTop: SPACING.xxl
+  },
+  bannerTitle: { fontSize: FONTS.size.lg, ...FONTS.bold, color: COLORS.text, marginBottom: 4 },
+  bannerSub: { fontSize: FONTS.size.sm, color: COLORS.textSecondary, ...FONTS.regular },
+  bannerIcon: {
+    width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,140,0,0.12)',
+    alignItems: 'center', justifyContent: 'center'
+  },
+  bottom: {
+    paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl, paddingTop: SPACING.lg,
+    backgroundColor: COLORS.background
+  },
 });

@@ -46,11 +46,11 @@ export default function LoginScreen({ navigation }) {
     try {
       const { signInWithPopup } = require('firebase/auth');
       const { googleProvider } = require('../firebase');
-      
+
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       console.log("User logged in:", user);
-      
+
       // Redirect after login
       navigation.replace('Home');
     } catch (error) {
@@ -175,8 +175,8 @@ export default function LoginScreen({ navigation }) {
           </View>
 
           {/* Google Button */}
-          <TouchableOpacity 
-            style={styles.googleButton} 
+          <TouchableOpacity
+            style={styles.googleButton}
             activeOpacity={0.8}
             onPress={handleGoogleLogin}
           >
