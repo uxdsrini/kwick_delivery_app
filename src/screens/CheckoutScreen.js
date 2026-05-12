@@ -36,7 +36,7 @@ export default function CheckoutScreen({ navigation, route }) {
 
   const handlePlaceOrder = async () => {
     if (items.length === 0) return;
-    
+
     const deliveryBoyNumber = "8978540612";
     const orderId = `FR-${Math.floor(1000 + Math.random() * 9000)}`;
     const message = `🛒 *New Kwick Order*\n\n*Order ID:* ${orderId}\n*Customer:* ${userData?.fullName || 'Customer'}\n*Phone:* ${address.mobile || 'N/A'}\n*Address:* ${address.flat}, ${address.street}, ${address.pincode}\n\n*Items:*\n${items.map(item => `• ${item.name} - ${item.quantity} ${item.unit}`).join("\n")}\n\n*Payment:* Cash on Delivery\n\n_Sent via Kwick App_`;
