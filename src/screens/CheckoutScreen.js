@@ -21,32 +21,6 @@ export default function CheckoutScreen({ navigation, route }) {
   const { items = [], address = {} } = route.params || {};
   const [loading, setLoading] = useState(false);
 
-  const [userData, setUserData] = useState(null);
-
-  React.useEffect(() => {
-    const fetchUser = async () => {
-      if (auth.currentUser) {
-        const { getDoc, doc } = require('firebase/firestore');
-        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
-        if (userDoc.exists()) setUserData(userDoc.data());
-      }
-    };
-    fetchUser();
-  }, []);
-
-  const sendOrderToWhatsApp = (order) => {
-    const deliveryBoyNumber = "9963092123";
-    const { Linking } = require('react-native');
-
-    const message = `🛒 *New Kwick Order*\n\n*Customer:* ${userData?.fullName || 'Customer'}\n*Phone:* ${address.mobile || 'N/A'}\n*Address:* ${address.flat}, ${address.street}, ${address.pincode}\n\n*Items:*\n${order.items.map(item => `• ${item.name} - ${item.quantity} ${item.unit}`).join("\n")}\n\n*Payment:* Cash on Delivery\n\n_Sent via Kwick App_`;
-
-    const whatsappUrl = `https://wa.me/${deliveryBoyNumber}?text=${encodeURIComponent(message)}`;
-
-    Linking.openURL(whatsappUrl).catch(() => {
-      Alert.alert('Error', 'Make sure WhatsApp is installed on your device');
-    });
-  };
-
   const handlePlaceOrder = async () => {
     if (items.length === 0) return;
 
@@ -70,11 +44,8 @@ export default function CheckoutScreen({ navigation, route }) {
       };
 
       await addDoc(collection(db, 'orders'), orderData);
-
-      // Call WhatsApp redirection
-      sendOrderToWhatsApp(orderData);
-
-      navigation.navigate('OrderSuccess', { items, address });
+      
+      navigation.navigate('OrderSuccess', { items, address, orderId });
     } catch (error) {
       console.error("Error placing order:", error);
       Alert.alert('Error', 'Failed to place order. Please try again.');

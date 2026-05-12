@@ -4,14 +4,29 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, FONTS, SHADOWS, commonStyles } from '../theme';
 
-export default function OrderSuccessScreen({ navigation }) {
+export default function OrderSuccessScreen({ navigation, route }) {
+  const { items = [], address = {}, orderId = '#FR-5421' } = route.params || {};
+
+  const sendOrderToWhatsApp = () => {
+    const deliveryBoyNumber = "9963092123";
+    const { Linking, Alert } = require('react-native');
+
+    const message = `🛒 *New Kwick Order*\n\n*Order ID:* ${orderId}\n*Phone:* ${address.mobile || 'N/A'}\n*Address:* ${address.flat}, ${address.street}, ${address.pincode}\n\n*Items:*\n${items.map(item => `• ${item.name} - ${item.quantity} ${item.unit}`).join("\n")}\n\n*Payment:* Cash on Delivery\n\n_Sent via Kwick App_`;
+
+    const whatsappUrl = `https://wa.me/${deliveryBoyNumber}?text=${encodeURIComponent(message)}`;
+
+    Linking.openURL(whatsappUrl).catch(() => {
+      Alert.alert('Error', 'Make sure WhatsApp is installed on your device');
+    });
+  };
+
   return (
     <View style={commonStyles.screen}>
       <StatusBar style="dark" />
 
       {/* Header */}
       <View style={s.header}>
-        <Text style={s.headerTitle}>Checkout</Text>
+        <Text style={s.headerTitle}>Order Success</Text>
       </View>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
@@ -27,9 +42,9 @@ export default function OrderSuccessScreen({ navigation }) {
 
         {/* Delivery Info Card */}
         <View style={s.deliveryCard}>
-          <Text style={s.deliveryTitle}>Delivery Person Will Call you</Text>
+          <Text style={s.deliveryTitle}>Action Required!</Text>
           <Text style={s.deliveryDesc}>
-            Delivery boy check the payment and confirm payment then your order will be deliver to your door step.
+            Please click the button below to send your order details to the delivery partner on WhatsApp.
           </Text>
         </View>
 
@@ -37,7 +52,7 @@ export default function OrderSuccessScreen({ navigation }) {
         <View style={s.orderInfoCard}>
           <View style={s.infoRow}>
             <Text style={s.infoLabel}>ORDER ID</Text>
-            <Text style={s.infoValue}>#FR-5421</Text>
+            <Text style={s.infoValue}>{orderId}</Text>
           </View>
           <View style={s.infoDivider} />
           <View style={s.infoRow}>
@@ -50,9 +65,9 @@ export default function OrderSuccessScreen({ navigation }) {
         </View>
 
         {/* CTA Buttons */}
-        <TouchableOpacity style={s.callBtn} activeOpacity={0.85}>
-          <MaterialCommunityIcons name="truck-delivery" size={22} color="#fff" />
-          <Text style={s.callBtnText}>Call to Delivery</Text>
+        <TouchableOpacity style={s.callBtn} activeOpacity={0.85} onPress={sendOrderToWhatsApp}>
+          <MaterialCommunityIcons name="whatsapp" size={24} color="#fff" />
+          <Text style={s.callBtnText}>Confirm on WhatsApp</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
