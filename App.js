@@ -6,7 +6,6 @@ import LoginScreen from './src/screens/LoginScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import AddressScreen from './src/screens/AddressScreen';
-import CheckoutScreen from './src/screens/CheckoutScreen';
 import OrderSuccessScreen from './src/screens/OrderSuccessScreen';
 import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
 import EditItemScreen from './src/screens/EditItemScreen';
@@ -29,7 +28,6 @@ export default function App() {
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Address" component={AddressScreen} />
-        <Stack.Screen name="Checkout" component={CheckoutScreen} />
         <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
         <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
         <Stack.Screen name="EditItem" component={EditItemScreen} />

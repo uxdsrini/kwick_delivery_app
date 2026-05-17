@@ -1,14 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert
+  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Linking
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { auth, db } from '../firebase';
-import { doc, updateDoc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { COLORS, SPACING, RADIUS, FONTS, SHADOWS, commonStyles } from '../theme';
 
+const EMOJIS = {
+  kale: '🥬', carrot: '🥕', apple: '🍎', tomato: '🍅', banana: '🍌',
+  milk: '🥛', egg: '🥚', bread: '🍞', rice: '🍚', onion: '🧅', potato: '🥔'
+};
+
+const getEmoji = (name) => {
+  const l = name.toLowerCase();
+  for (const [k, e] of Object.entries(EMOJIS)) { if (l.includes(k)) return e; }
+  return '🛒';
+};
 export default function AddressScreen({ navigation, route }) {
   const { items = [], fromProfile = false, existingAddress = null } = route.params || {};
   const [flat, setFlat] = useState(existingAddress?.flat || '');
@@ -103,6 +113,17 @@ export default function AddressScreen({ navigation, route }) {
     setAddressType(address.type || 'Home');
   };
 
+  const sendOrderToWhatsApp = (orderData, addressObj) => {
+    const deliveryBoyNumber = "9963092123";
+    const message = `🛒 *New Kwick Order*\n\n*Customer:* ${addressObj.name || 'Customer'}\n*Phone:* ${addressObj.mobile || 'N/A'}\n*Address:* ${addressObj.type}: ${addressObj.flat}, ${addressObj.street}, ${addressObj.pincode}\n\n*Items:*\n${items.map(item => `• ${item.name} - ${item.quantity} ${item.unit}`).join("\n")}\n\n_Sent via Kwick App_`;
+
+    const whatsappUrl = `https://wa.me/${deliveryBoyNumber}?text=${encodeURIComponent(message)}`;
+
+    Linking.openURL(whatsappUrl).catch(() => {
+      Alert.alert('Error', 'Make sure WhatsApp is installed on your device');
+    });
+  };
+
   const handleNext = async () => {
     const address = {
       name: name || '',
@@ -130,16 +151,46 @@ export default function AddressScreen({ navigation, route }) {
         setIsSaving(false);
       }
     } else {
-      if (auth.currentUser) {
-        try {
+      if (!items || items.length === 0) {
+        Alert.alert('Error', 'Your cart is empty.');
+        return;
+      }
+
+      setIsSaving(true);
+      try {
+        if (auth.currentUser) {
           await setDoc(doc(db, 'users', auth.currentUser.uid), {
             savedAddress: address
           }, { merge: true });
-        } catch (error) {
-          console.log('Error auto-saving address:', error);
         }
+
+        const orderId = `FR-${Math.floor(1000 + Math.random() * 9000)}`;
+        const orderData = {
+          id: orderId,
+          userId: auth.currentUser?.uid || 'anonymous',
+          items: items.map(i => ({
+            name: i.name,
+            quantity: i.quantity,
+            unit: i.unit
+          })),
+          total: 0,
+          status: 'In Transit',
+          emoji: getEmoji(items[0]?.name || ''),
+          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase() + ', ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+          createdAt: serverTimestamp(),
+          address: address,
+        };
+
+        await addDoc(collection(db, 'orders'), orderData);
+        sendOrderToWhatsApp(orderData, address);
+        
+        navigation.navigate('OrderSuccess', { items, address });
+      } catch (error) {
+        console.log('Error placing order:', error);
+        Alert.alert('Error', 'Failed to place order.');
+      } finally {
+        setIsSaving(false);
       }
-      navigation.navigate('Checkout', { items, address });
     }
   };
 
@@ -326,7 +377,7 @@ export default function AddressScreen({ navigation, route }) {
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={commonStyles.primaryButtonText}>
-              {fromProfile ? 'Save Changes' : 'Next'}
+              {fromProfile ? 'Save Changes' : 'Confirm On Whatsapp'}
             </Text>
           )}
         </TouchableOpacity>
