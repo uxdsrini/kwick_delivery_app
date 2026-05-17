@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, Animated, ActivityIndicator, Alert
@@ -16,6 +16,19 @@ export default function LoginScreen({ navigation }) {
   const [focusedField, setFocusedField] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        if (user.email && user.email.toLowerCase().trim() === 'bsrin6@gmail.com') {
+          navigation.replace('AdminDashboard');
+        } else {
+          navigation.replace('Home');
+        }
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please enter both email and password');
@@ -25,7 +38,12 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigation.replace('Home');
+      
+      if (email.toLowerCase().trim() === 'bsrin6@gmail.com') {
+        navigation.replace('AdminDashboard');
+      } else {
+        navigation.replace('Home');
+      }
     } catch (error) {
       console.error(error);
       let errorMessage = 'Invalid email or password.';
@@ -52,7 +70,11 @@ export default function LoginScreen({ navigation }) {
       console.log("User logged in:", user);
 
       // Redirect after login
-      navigation.replace('Home');
+      if (user.email === 'bsrin6@gmail.com') {
+        navigation.replace('AdminDashboard');
+      } else {
+        navigation.replace('Home');
+      }
     } catch (error) {
       console.error("Google login error:", error.message);
       Alert.alert('Google Login Error', error.message);
