@@ -32,8 +32,11 @@ export default function ProfileScreen({ navigation }) {
             const data = docSnap.data();
             setUserData(data);
             // Only update editable fields if the user hasn't started typing changes
-            setEditedName(prev => hasChanges ? prev : (data.fullName || ''));
-            setEditedPhone(prev => hasChanges ? prev : (data.mobile || ''));
+            setEditedName(prev => hasChanges ? prev : (data.fullName || data.name || data.displayName || data.savedAddress?.name || user.displayName || prev));
+            setEditedPhone(prev => hasChanges ? prev : (data.mobile || data.phoneNumber || data.savedAddress?.mobile || user.phoneNumber || prev));
+          } else {
+            setEditedName(prev => hasChanges ? prev : (user.displayName || prev));
+            setEditedPhone(prev => hasChanges ? prev : (user.phoneNumber || prev));
           }
         });
 
@@ -53,7 +56,13 @@ export default function ProfileScreen({ navigation }) {
               const dateB = b.createdAt?.seconds || 0;
               return dateB - dateA;
             });
-            setLastOrderAddress(sortedOrders[0].address);
+            const lastAddr = sortedOrders[0].address;
+            setLastOrderAddress(lastAddr);
+
+            if (lastAddr) {
+              setEditedName(prev => hasChanges ? prev : (prev || lastAddr.name || ''));
+              setEditedPhone(prev => hasChanges ? prev : (prev || lastAddr.mobile || ''));
+            }
           }
         } catch (error) {
           console.error("Error fetching profile data:", error);
@@ -82,10 +91,11 @@ export default function ProfileScreen({ navigation }) {
     if (!auth.currentUser) return;
     setIsSaving(true);
     try {
-      await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+      const { setDoc, doc } = require('firebase/firestore');
+      await setDoc(doc(db, 'users', auth.currentUser.uid), {
         fullName: editedName,
         mobile: editedPhone,
-      });
+      }, { merge: true });
       setUserData({ ...userData, fullName: editedName, mobile: editedPhone });
       setHasChanges(false);
       Alert.alert('Success', 'Profile updated successfully!');
