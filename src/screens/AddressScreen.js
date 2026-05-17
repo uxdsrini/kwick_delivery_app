@@ -30,6 +30,49 @@ export default function AddressScreen({ navigation, route }) {
   const [addressType, setAddressType] = useState(existingAddress?.type || 'Home');
   const [focusedField, setFocusedField] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState({
+    flat: false,
+    street: false,
+    pincode: false,
+    name: false,
+    mobile: false,
+  });
+
+  const handleFlatChange = (text) => {
+    setFlat(text);
+    if (errors.flat && text.trim()) {
+      setErrors(prev => ({ ...prev, flat: false }));
+    }
+  };
+
+  const handleStreetChange = (text) => {
+    setStreet(text);
+    if (errors.street && text.trim()) {
+      setErrors(prev => ({ ...prev, street: false }));
+    }
+  };
+
+  const handlePincodeChange = (text) => {
+    setPincode(text);
+    if (errors.pincode && text.trim()) {
+      setErrors(prev => ({ ...prev, pincode: false }));
+    }
+  };
+
+  const handleNameChange = (text) => {
+    setName(text);
+    if (errors.name && text.trim()) {
+      setErrors(prev => ({ ...prev, name: false }));
+    }
+  };
+
+  const handleMobileChange = (text) => {
+    setMobile(text);
+    if (errors.mobile && text.trim() && text.trim().replace(/\D/g, '').length >= 10) {
+      setErrors(prev => ({ ...prev, mobile: false }));
+    }
+  };
+
 
   const addressTypes = [
     { key: 'Home', icon: 'home-outline' },
@@ -114,14 +157,60 @@ export default function AddressScreen({ navigation, route }) {
   };
 
   const handleNext = async () => {
+    const trimmedFlat = flat.trim();
+    const trimmedStreet = street.trim();
+    const trimmedPincode = pincode.trim();
+    const trimmedName = name.trim();
+    const trimmedMobile = mobile.trim();
+
+    const newErrors = {
+      flat: !trimmedFlat,
+      street: !trimmedStreet,
+      pincode: !trimmedPincode,
+      name: !trimmedName,
+      mobile: !trimmedMobile || trimmedMobile.replace(/\D/g, '').length < 10,
+    };
+
+    setErrors(newErrors);
+
+    if (newErrors.name) {
+      Alert.alert('Required Field', 'Please enter your Full Name.');
+      return;
+    }
+
+    if (newErrors.flat) {
+      Alert.alert('Required Field', 'Please enter your Flat / House No. / Building.');
+      return;
+    }
+
+    if (newErrors.street) {
+      Alert.alert('Required Field', 'Please enter your Street Name & Locality.');
+      return;
+    }
+
+    if (newErrors.pincode) {
+      Alert.alert('Required Field', 'Please enter your Pincode.');
+      return;
+    }
+
+    if (!trimmedMobile) {
+      Alert.alert('Required Field', 'Please enter your Mobile Number.');
+      return;
+    }
+
+    if (newErrors.mobile) {
+      Alert.alert('Invalid Mobile Number', 'Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
     const address = {
-      name: name || '',
-      flat: flat || '',
-      street: street || '',
-      pincode: pincode || '',
-      landmark: landmark || '',
+      name: trimmedName,
+      flat: trimmedFlat,
+      street: trimmedStreet,
+      pincode: trimmedPincode,
+      landmark: landmark.trim(),
       type: addressType || 'Home',
-      mobile: mobile || '',
+      mobile: trimmedMobile,
     };
 
     if (fromProfile) {
@@ -216,32 +305,38 @@ export default function AddressScreen({ navigation, route }) {
           {/* Form */}
           <View style={styles.formSection}>
             <View style={styles.fieldGroup}>
-              <Text style={commonStyles.label}>Flat / House No. / Building</Text>
+              <Text style={commonStyles.label}>
+                Flat / House No. / Building <Text style={styles.asterisk}>*</Text>
+              </Text>
               <TextInput
                 style={[
                   commonStyles.input,
                   focusedField === 'flat' && commonStyles.inputFocused,
+                  errors.flat && styles.inputError,
                 ]}
                 placeholder="Apt 4B, Willow Towers"
                 placeholderTextColor={COLORS.textMuted}
                 value={flat}
-                onChangeText={setFlat}
+                onChangeText={handleFlatChange}
                 onFocus={() => setFocusedField('flat')}
                 onBlur={() => setFocusedField(null)}
               />
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={commonStyles.label}>Street Name & Locality</Text>
+              <Text style={commonStyles.label}>
+                Street Name & Locality <Text style={styles.asterisk}>*</Text>
+              </Text>
               <TextInput
                 style={[
                   commonStyles.input,
                   focusedField === 'street' && commonStyles.inputFocused,
+                  errors.street && styles.inputError,
                 ]}
                 placeholder="124 Orchard Street, Lower East Side"
                 placeholderTextColor={COLORS.textMuted}
                 value={street}
-                onChangeText={setStreet}
+                onChangeText={handleStreetChange}
                 onFocus={() => setFocusedField('street')}
                 onBlur={() => setFocusedField(null)}
               />
@@ -249,16 +344,19 @@ export default function AddressScreen({ navigation, route }) {
 
             <View style={styles.twoCol}>
               <View style={[styles.fieldGroup, { flex: 1, marginRight: SPACING.md }]}>
-                <Text style={commonStyles.label}>Pincode</Text>
+                <Text style={commonStyles.label}>
+                  Pincode <Text style={styles.asterisk}>*</Text>
+                </Text>
                 <TextInput
                   style={[
                     commonStyles.input,
                     focusedField === 'pincode' && commonStyles.inputFocused,
+                    errors.pincode && styles.inputError,
                   ]}
                   placeholder="505212"
                   placeholderTextColor={COLORS.textMuted}
                   value={pincode}
-                  onChangeText={setPincode}
+                  onChangeText={handlePincodeChange}
                   keyboardType="number-pad"
                   onFocus={() => setFocusedField('pincode')}
                   onBlur={() => setFocusedField(null)}
@@ -311,16 +409,19 @@ export default function AddressScreen({ navigation, route }) {
 
             {/* Name */}
             <View style={styles.fieldGroup}>
-              <Text style={commonStyles.label}>Full Name</Text>
+              <Text style={commonStyles.label}>
+                Full Name <Text style={styles.asterisk}>*</Text>
+              </Text>
               <TextInput
                 style={[
                   commonStyles.input,
                   focusedField === 'name' && commonStyles.inputFocused,
+                  errors.name && styles.inputError,
                 ]}
                 placeholder="John Doe"
                 placeholderTextColor={COLORS.textMuted}
                 value={name}
-                onChangeText={setName}
+                onChangeText={handleNameChange}
                 onFocus={() => setFocusedField('name')}
                 onBlur={() => setFocusedField(null)}
               />
@@ -328,9 +429,11 @@ export default function AddressScreen({ navigation, route }) {
 
             {/* Mobile */}
             <View style={styles.fieldGroup}>
-              <Text style={commonStyles.label}>Mobile Number</Text>
+              <Text style={commonStyles.label}>
+                Mobile Number <Text style={styles.asterisk}>*</Text>
+              </Text>
               <View style={styles.phoneRow}>
-                <View style={styles.countryCode}>
+                <View style={[styles.countryCode, errors.mobile && styles.countryCodeError]}>
                   <Text style={styles.countryCodeText}>+91</Text>
                 </View>
                 <TextInput
@@ -338,11 +441,12 @@ export default function AddressScreen({ navigation, route }) {
                     commonStyles.input,
                     { flex: 1, borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeftWidth: 0 },
                     focusedField === 'mobile' && commonStyles.inputFocused,
+                    errors.mobile && [styles.inputError, { borderLeftWidth: 0 }],
                   ]}
                   placeholder="9876543210"
                   placeholderTextColor={COLORS.textMuted}
                   value={mobile}
-                  onChangeText={setMobile}
+                  onChangeText={handleMobileChange}
                   keyboardType="phone-pad"
                   onFocus={() => setFocusedField('mobile')}
                   onBlur={() => setFocusedField(null)}
@@ -468,5 +572,18 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xxxl,
     paddingTop: SPACING.lg,
     backgroundColor: COLORS.background,
+  },
+  asterisk: {
+    color: COLORS.error,
+  },
+  inputError: {
+    borderColor: COLORS.error,
+    borderWidth: 1.5,
+    backgroundColor: COLORS.errorLight,
+  },
+  countryCodeError: {
+    borderColor: COLORS.error,
+    borderWidth: 1.5,
+    borderRightWidth: 0,
   },
 });
