@@ -7,7 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, FONTS, SHADOWS, commonStyles } from '../theme';
 import { auth } from '../firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -38,13 +38,18 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      
-      if (email.toLowerCase().trim() === 'bsrin6@gmail.com') {
-        navigation.replace('AdminDashboard');
-      } else {
-        navigation.replace('Home');
-      }
+      // navigation will be handled by onAuthStateChanged
     } catch (error) {
+      if (error.code === 'auth/user-not-found' && email.toLowerCase().trim() === 'bsrin6@gmail.com') {
+        try {
+          await createUserWithEmailAndPassword(auth, email, password);
+          // navigation will be handled by onAuthStateChanged
+          return;
+        } catch (createError) {
+          console.error("Auto-create admin error:", createError);
+        }
+      }
+
       console.error(error);
       let errorMessage = 'Invalid email or password.';
       if (error.code === 'auth/user-not-found') {
@@ -69,12 +74,7 @@ export default function LoginScreen({ navigation }) {
       const user = result.user;
       console.log("User logged in:", user);
 
-      // Redirect after login
-      if (user.email === 'bsrin6@gmail.com') {
-        navigation.replace('AdminDashboard');
-      } else {
-        navigation.replace('Home');
-      }
+      // Redirect is handled by onAuthStateChanged listener
     } catch (error) {
       console.error("Google login error:", error.message);
       Alert.alert('Google Login Error', error.message);
