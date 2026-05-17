@@ -30,13 +30,32 @@ export default function ProfileScreen({ navigation }) {
         userUnsubscribe = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
+            console.log("PROFILE - User doc data:", data);
             setUserData(data);
-            // Only update editable fields if the user hasn't started typing changes
-            setEditedName(prev => hasChanges ? prev : (data.fullName || data.name || data.displayName || data.savedAddress?.name || user.displayName || prev));
-            setEditedPhone(prev => hasChanges ? prev : (data.mobile || data.phoneNumber || data.savedAddress?.mobile || user.phoneNumber || prev));
+            
+            const fetchedName = data.fullName || data.name || data.displayName || data.savedAddress?.name || user.displayName || '';
+            const fetchedPhone = data.mobile || data.phoneNumber || data.savedAddress?.mobile || user.phoneNumber || '';
+            console.log("PROFILE - Setting Name to:", fetchedName, "Phone to:", fetchedPhone);
+            
+            // Force update editable fields if they are currently empty
+            setEditedName(prev => {
+              if (prev && hasChanges) return prev;
+              return fetchedName || prev;
+            });
+            setEditedPhone(prev => {
+              if (prev && hasChanges) return prev;
+              return fetchedPhone || prev;
+            });
           } else {
-            setEditedName(prev => hasChanges ? prev : (user.displayName || prev));
-            setEditedPhone(prev => hasChanges ? prev : (user.phoneNumber || prev));
+            console.log("PROFILE - User doc doesn't exist, fallback to Auth:", user.displayName);
+            setEditedName(prev => {
+              if (prev && hasChanges) return prev;
+              return user.displayName || prev;
+            });
+            setEditedPhone(prev => {
+              if (prev && hasChanges) return prev;
+              return user.phoneNumber || prev;
+            });
           }
         });
 
@@ -58,10 +77,17 @@ export default function ProfileScreen({ navigation }) {
             });
             const lastAddr = sortedOrders[0].address;
             setLastOrderAddress(lastAddr);
+            console.log("PROFILE - Last Order Address:", lastAddr);
 
             if (lastAddr) {
-              setEditedName(prev => hasChanges ? prev : (prev || lastAddr.name || ''));
-              setEditedPhone(prev => hasChanges ? prev : (prev || lastAddr.mobile || ''));
+              setEditedName(prev => {
+                if (prev && hasChanges) return prev;
+                return prev || lastAddr.name || '';
+              });
+              setEditedPhone(prev => {
+                if (prev && hasChanges) return prev;
+                return prev || lastAddr.mobile || '';
+              });
             }
           }
         } catch (error) {
