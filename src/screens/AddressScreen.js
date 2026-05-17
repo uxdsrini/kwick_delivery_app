@@ -6,7 +6,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { auth, db } from '../firebase';
-import { doc, updateDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { COLORS, SPACING, RADIUS, FONTS, SHADOWS, commonStyles } from '../theme';
 
 export default function AddressScreen({ navigation, route }) {
@@ -16,6 +16,7 @@ export default function AddressScreen({ navigation, route }) {
   const [pincode, setPincode] = useState(existingAddress?.pincode || '');
   const [landmark, setLandmark] = useState(existingAddress?.landmark || '');
   const [mobile, setMobile] = useState(existingAddress?.mobile || '');
+  const [name, setName] = useState(existingAddress?.name || '');
   const [addressType, setAddressType] = useState(existingAddress?.type || 'Home');
   const [focusedField, setFocusedField] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -31,48 +32,56 @@ export default function AddressScreen({ navigation, route }) {
       if (!auth.currentUser) return;
 
       try {
+        let userData = {};
         const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
         if (userDoc.exists()) {
-          const userData = userDoc.data();
-          
-          // 1. ALWAYS prioritize the global mobile number from the user document (signup info)
+          userData = userDoc.data();
+
+          let hasGlobalMobile = false;
           if (userData.mobile) {
             setMobile(userData.mobile);
+            hasGlobalMobile = true;
           }
-          
-          // 2. If we don't have an existingAddress from params, check savedAddress or last order
-          if (!existingAddress) {
-            if (userData.savedAddress) {
-              const saved = userData.savedAddress;
-              setFlat(saved.flat || '');
-              setStreet(saved.street || '');
-              setPincode(saved.pincode || '');
-              setLandmark(saved.landmark || '');
-              // We already set the primary mobile above, so we only overwrite 
-              // if the saved address specifically has one and we want that (usually we don't want the placeholder)
-              // But for consistency with previous address, we can check if it's different.
-              // However, user explicitly asked for the signup info mobile.
-              setAddressType(saved.type || 'Home');
-              return;
-            }
 
-            // Fallback: Last order
+          if (userData.name || userData.displayName) {
+            setName(userData.name || userData.displayName);
+          }
+        }
+
+        if (!existingAddress) {
+          let foundAddress = null;
+
+          if (userData.savedAddress) {
+            foundAddress = userData.savedAddress;
+          } else {
+            // Fetch from the most recent order in the database
             const ordersRef = collection(db, 'orders');
             const q = query(ordersRef, where('userId', '==', auth.currentUser.uid));
             const querySnapshot = await getDocs(q);
-            
+
             if (!querySnapshot.empty) {
-              const fetchedOrders = querySnapshot.docs.map(doc => doc.data());
-              const sortedOrders = fetchedOrders.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-              if (sortedOrders[0].address) {
-                const lastAddr = sortedOrders[0].address;
-                setFlat(lastAddr.flat || '');
-                setStreet(lastAddr.street || '');
-                setPincode(lastAddr.pincode || '');
-                setLandmark(lastAddr.landmark || '');
-                if (lastAddr.mobile) setMobile(lastAddr.mobile);
-                setAddressType(lastAddr.type || 'Home');
+              const fetchedOrders = querySnapshot.docs.map(d => d.data());
+              const sortedOrders = fetchedOrders.sort((a, b) => {
+                const aTime = a.createdAt?.seconds || a.createdAt || 0;
+                const bTime = b.createdAt?.seconds || b.createdAt || 0;
+                return bTime - aTime;
+              });
+
+              if (sortedOrders[0] && sortedOrders[0].address) {
+                foundAddress = sortedOrders[0].address;
               }
+            }
+          }
+
+          if (foundAddress) {
+            if (foundAddress.name) setName(foundAddress.name);
+            setFlat(foundAddress.flat || '');
+            setStreet(foundAddress.street || '');
+            setPincode(foundAddress.pincode || '');
+            setLandmark(foundAddress.landmark || '');
+            setAddressType(foundAddress.type || 'Home');
+            if (foundAddress.mobile) {
+              setMobile(foundAddress.mobile);
             }
           }
         }
@@ -85,6 +94,7 @@ export default function AddressScreen({ navigation, route }) {
   }, [existingAddress]);
 
   const setAddressData = (address) => {
+    setName(address.name || '');
     setFlat(address.flat || '');
     setStreet(address.street || '');
     setPincode(address.pincode || '');
@@ -95,6 +105,7 @@ export default function AddressScreen({ navigation, route }) {
 
   const handleNext = async () => {
     const address = {
+      name: name || '',
       flat: flat || '',
       street: street || '',
       pincode: pincode || '',
@@ -107,9 +118,9 @@ export default function AddressScreen({ navigation, route }) {
       if (!auth.currentUser) return;
       setIsSaving(true);
       try {
-        await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+        await setDoc(doc(db, 'users', auth.currentUser.uid), {
           savedAddress: address
-        });
+        }, { merge: true });
         Alert.alert('Success', 'Address updated successfully!');
         navigation.goBack();
       } catch (error) {
@@ -119,6 +130,15 @@ export default function AddressScreen({ navigation, route }) {
         setIsSaving(false);
       }
     } else {
+      if (auth.currentUser) {
+        try {
+          await setDoc(doc(db, 'users', auth.currentUser.uid), {
+            savedAddress: address
+          }, { merge: true });
+        } catch (error) {
+          console.log('Error auto-saving address:', error);
+        }
+      }
       navigation.navigate('Checkout', { items, address });
     }
   };
@@ -196,7 +216,7 @@ export default function AddressScreen({ navigation, route }) {
                     commonStyles.input,
                     focusedField === 'pincode' && commonStyles.inputFocused,
                   ]}
-                  placeholder="10002"
+                  placeholder="505212"
                   placeholderTextColor={COLORS.textMuted}
                   value={pincode}
                   onChangeText={setPincode}
@@ -248,6 +268,23 @@ export default function AddressScreen({ navigation, route }) {
                   </TouchableOpacity>
                 ))}
               </View>
+            </View>
+
+            {/* Name */}
+            <View style={styles.fieldGroup}>
+              <Text style={commonStyles.label}>Full Name</Text>
+              <TextInput
+                style={[
+                  commonStyles.input,
+                  focusedField === 'name' && commonStyles.inputFocused,
+                ]}
+                placeholder="John Doe"
+                placeholderTextColor={COLORS.textMuted}
+                value={name}
+                onChangeText={setName}
+                onFocus={() => setFocusedField('name')}
+                onBlur={() => setFocusedField(null)}
+              />
             </View>
 
             {/* Mobile */}

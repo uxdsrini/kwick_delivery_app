@@ -100,14 +100,14 @@ const s = StyleSheet.create({
     textAlign: 'center', lineHeight: 22, marginBottom: SPACING.xxl,
   },
   deliveryCard: {
-    backgroundColor: COLORS.accentLight, borderRadius: RADIUS.xl,
+    backgroundColor: '#FCE4D6', borderRadius: RADIUS.xl,
     padding: SPACING.xl, width: '100%', marginBottom: SPACING.xl,
   },
   deliveryTitle: {
-    fontSize: FONTS.size.lg, ...FONTS.bold, color: COLORS.text, marginBottom: SPACING.sm,
+    fontSize: FONTS.size.lg, ...FONTS.bold, color: '#3E2723', marginBottom: SPACING.sm,
   },
   deliveryDesc: {
-    fontSize: FONTS.size.sm, ...FONTS.regular, color: COLORS.textSecondary, lineHeight: 20,
+    fontSize: FONTS.size.sm, ...FONTS.regular, color: '#5D4037', lineHeight: 20,
   },
   orderInfoCard: {
     backgroundColor: COLORS.surface, borderRadius: RADIUS.xl,
