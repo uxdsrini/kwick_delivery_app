@@ -119,9 +119,13 @@ export default function AddressScreen({ navigation, route }) {
 
     const whatsappUrl = `https://wa.me/${deliveryBoyNumber}?text=${encodeURIComponent(message)}`;
 
-    Linking.openURL(whatsappUrl).catch(() => {
-      Alert.alert('Error', 'Make sure WhatsApp is installed on your device');
-    });
+    if (Platform.OS === 'web') {
+      window.location.href = whatsappUrl;
+    } else {
+      Linking.openURL(whatsappUrl).catch(() => {
+        Alert.alert('Error', 'Make sure WhatsApp is installed on your device');
+      });
+    }
   };
 
   const handleNext = async () => {
