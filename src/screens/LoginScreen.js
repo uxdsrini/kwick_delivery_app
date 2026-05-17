@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, Animated, ActivityIndicator, Alert
@@ -7,7 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, FONTS, SHADOWS, commonStyles } from '../theme';
 import { auth } from '../firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -15,19 +15,6 @@ export default function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      if (user) {
-        if (user.email && user.email.toLowerCase().trim() === 'bsrin6@gmail.com') {
-          navigation.replace('AdminDashboard');
-        } else {
-          navigation.replace('Home');
-        }
-      }
-    });
-    return unsubscribe;
-  }, [navigation]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -38,18 +25,8 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // navigation will be handled by onAuthStateChanged
+      navigation.replace('Home');
     } catch (error) {
-      if (error.code === 'auth/user-not-found' && email.toLowerCase().trim() === 'bsrin6@gmail.com') {
-        try {
-          await createUserWithEmailAndPassword(auth, email, password);
-          // navigation will be handled by onAuthStateChanged
-          return;
-        } catch (createError) {
-          console.error("Auto-create admin error:", createError);
-        }
-      }
-
       console.error(error);
       let errorMessage = 'Invalid email or password.';
       if (error.code === 'auth/user-not-found') {
@@ -74,7 +51,8 @@ export default function LoginScreen({ navigation }) {
       const user = result.user;
       console.log("User logged in:", user);
 
-      // Redirect is handled by onAuthStateChanged listener
+      // Redirect after login
+      navigation.replace('Home');
     } catch (error) {
       console.error("Google login error:", error.message);
       Alert.alert('Google Login Error', error.message);

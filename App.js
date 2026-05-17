@@ -11,8 +11,6 @@ import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
 import EditItemScreen from './src/screens/EditItemScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 
-import AdminDashboardScreen from './src/screens/AdminDashboardScreen';
-
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -27,7 +25,6 @@ export default function App() {
         }}
       >
         <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Address" component={AddressScreen} />
