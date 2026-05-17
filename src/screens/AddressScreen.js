@@ -114,7 +114,7 @@ export default function AddressScreen({ navigation, route }) {
   };
 
   const sendOrderToWhatsApp = (orderData, addressObj) => {
-    const deliveryBoyNumber = "9963092123";
+    const deliveryBoyNumber = "9347172123";
     const message = `🛒 *New Kwick Order*\n\n*Customer:* ${addressObj.name || 'Customer'}\n*Phone:* ${addressObj.mobile || 'N/A'}\n*Address:* ${addressObj.type}: ${addressObj.flat}, ${addressObj.street}, ${addressObj.pincode}\n\n*Items:*\n${items.map(item => `• ${item.name} - ${item.quantity} ${item.unit}`).join("\n")}\n\n_Sent via Kwick App_`;
 
     const whatsappUrl = `https://wa.me/${deliveryBoyNumber}?text=${encodeURIComponent(message)}`;
@@ -183,7 +183,7 @@ export default function AddressScreen({ navigation, route }) {
 
         await addDoc(collection(db, 'orders'), orderData);
         sendOrderToWhatsApp(orderData, address);
-        
+
         navigation.navigate('OrderSuccess', { items, address });
       } catch (error) {
         console.log('Error placing order:', error);
